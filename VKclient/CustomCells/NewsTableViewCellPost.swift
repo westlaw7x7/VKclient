@@ -1,52 +1,106 @@
 //
-//  NewsCollectionViewCell.swift
-//  MyFirstApp
+//  NewsTableViewCellPost.swift
+//  VKclient
 //
-//  Created by Alexander Grigoryev on 16.09.2021.
+//  Created by Alexander Grigoryev on 30.12.2021.
 //
 
 import UIKit
+import SwiftUI
+
+protocol NewsDelegate {
+    func buttonTapped(cell: NewsTableViewCellPost)
+}
 
 class NewsTableViewCellPost: UITableViewCell {
     
-    static let reusedIdentifier = "NewsPostCell"
+    //    MARK: - Properties
     
-    let label: UILabel = {
-        let label = UILabel()
-        label.translatesAutoresizingMaskIntoConstraints = false
-        label.textAlignment = .center
-        label.textColor = .black
-        label.lineBreakMode = .byClipping
-        label.contentMode = .scaleToFill
-        label.numberOfLines = 0
-        return label
-    }()
+    let textForPost = UILabel()
+    let showMoreTextButton = UIButton()
+    static let reusedIdentifier = "NewsPostCell"
+    var isPressed: Bool = false
+    var delegate: NewsDelegate?
+    
+    //    MARK: - Lifecycle
     
     override func awakeFromNib() {
         super.awakeFromNib()
-        setUpViews()
+        self.configureUI()
         
     }
     
-    private func setUpViews() {
-        
-        contentView.addSubview(label)
+    override func setSelected(_ selected: Bool, animated: Bool) {
+        super.setSelected(selected, animated: animated)
+    }
+    
+    
+    //    MARK: - Configuring UI
+    
+    private func configureUI() {
+        self.addTextLabel()
+        self.addShowMoreButton()
+        self.setupConstraints()
+    }
+    
+    private func addTextLabel() {
+        self.textForPost.translatesAutoresizingMaskIntoConstraints = false
+        textForPost.font = UIFont.systemFont(ofSize: 16.0)
+        textForPost.textColor = .black
+        textForPost.lineBreakMode = .byClipping
+        textForPost.contentMode = .scaleToFill
+        textForPost.numberOfLines = 0
+        textForPost.sizeToFit()
+        self.addSubview(self.textForPost)
+    }
+    
+    private func addShowMoreButton() {
+        self.showMoreTextButton.translatesAutoresizingMaskIntoConstraints = false
+        showMoreTextButton.setTitleColor(UIColor.systemBlue, for: .normal)
+        showMoreTextButton.addTarget(self, action: #selector(self.buttonTap), for: .touchUpInside)
+        self.addSubview(self.showMoreTextButton)
+    }
+    
+    @objc func buttonTap(_ sender: Any?) {
+        if sender is UIButton {
+            isPressed = !isPressed
+            showMoreTextButton.setTitle(buttonStateName(), for: .normal)
+        }
+        delegate?.buttonTapped(cell: self)
+    }
+    private func setupConstraints() {
         
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 0),
-            label.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 0),
-            label.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 0),
-            label.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 0)
+            
+            textForPost.topAnchor.constraint(equalTo: safeAreaLayoutGuide.topAnchor, constant: 10),
+            textForPost.leftAnchor.constraint(equalTo: safeAreaLayoutGuide.leftAnchor, constant: 10),
+            textForPost.rightAnchor.constraint(equalTo: safeAreaLayoutGuide.rightAnchor, constant: 10),
+            textForPost.bottomAnchor.constraint(equalTo: showMoreTextButton.topAnchor),
+            
+            showMoreTextButton.topAnchor.constraint(equalTo: textForPost.bottomAnchor),
+            showMoreTextButton.widthAnchor.constraint(equalToConstant: 150),
+            showMoreTextButton.heightAnchor.constraint(equalToConstant: 30),
+            showMoreTextButton.rightAnchor.constraint(equalTo: safeAreaLayoutGuide.rightAnchor, constant: 10),
+            showMoreTextButton.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: 5)
         ])
     }
     
-    func configure(_ text: PostNews) {
-        label.text = text.text
+    //    MARK: - Configuring cell
+    
+    func configure(_ postText: PostNews, isTapped: Bool) {
+        textForPost.text = postText.text
+        if isTapped {
+            isPressed = false
+            showMoreTextButton.setTitle(buttonStateName(), for: .normal)
+            showMoreTextButton.isHidden = false
+        } else {
+            showMoreTextButton.isHidden = true
+        }
     }
     
-    override func prepareForReuse() {
-        label.text = nil
+    private func buttonStateName() -> String {
+        isPressed ? "Show Less": "Show More"
     }
+    
 }
-
 
