@@ -9,7 +9,9 @@ import UIKit
 
 class AvatarView: UIView {
     
-    var imageView: UIImageView = {
+//    MARK: - Properties
+    
+   private(set) lazy var imageView: UIImageView = {
         let imageView = UIImageView()
         imageView.translatesAutoresizingMaskIntoConstraints = false
         imageView.contentMode = .scaleAspectFill
@@ -18,7 +20,7 @@ class AvatarView: UIView {
         return imageView
     }()
     
-    private var shadowView: UIView = {
+    private(set) lazy var shadowView: UIView = {
         let shadowView = UIView()
         shadowView.translatesAutoresizingMaskIntoConstraints = false
         shadowView.backgroundColor = .clear
@@ -26,6 +28,8 @@ class AvatarView: UIView {
         
         return shadowView
     }()
+    
+//    MARK: - Init
     
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -38,6 +42,8 @@ class AvatarView: UIView {
         setupViews()
         setupConstraint()
     }
+    
+//    MARK: - UI
     
     func setImage(_ image: UIImage?) {
         imageView.image = image

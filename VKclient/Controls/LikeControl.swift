@@ -10,11 +10,15 @@ import UIKit
 
 class LikeControl: UIControl {
     
-    @IBOutlet weak var likeButton: UIButton! {
-        didSet {
-            self.likeButton.addTarget(self, action: #selector(likeButtonHadler(_:)), for: .touchUpInside)
-        }
-    }
+//    MARK: - Properties
+    
+    private(set) lazy var likeButton: UIButton = {
+        let b = UIButton()
+        
+        b.addTarget(self, action: #selector(likeButtonHadler(_:)), for: .touchUpInside)
+        
+        return b
+    }()
     
     var isLiked: Bool = false
     
@@ -33,6 +37,8 @@ class LikeControl: UIControl {
         }
     }
     
+//    MARK: - Init
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
     }
@@ -50,3 +56,5 @@ class LikeControl: UIControl {
         isLiked ? self.likesCount += 1 : self.likesCount > 0 ? self.likesCount -= 1 : nil
     }
 }
+
+

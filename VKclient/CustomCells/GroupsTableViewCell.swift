@@ -12,8 +12,6 @@ class GroupsTableViewCell: UITableViewCell {
     
     //    MARK: - Properties
     
-    static let reusedIdentifier = "myGroupsCells"
-    
     private(set) lazy var avatarView: AvatarView = {
         let a = AvatarView()
         a.translatesAutoresizingMaskIntoConstraints = false
@@ -21,9 +19,8 @@ class GroupsTableViewCell: UITableViewCell {
         recognizer.numberOfTapsRequired = 1
         recognizer.numberOfTouchesRequired = 1
         a.addGestureRecognizer(recognizer)
-        a.isUserInteractionEnabled = true
-        //        a.contentMode = .scaleToFill
-        
+        a.isUserInteractionEnabled = false
+
         return a
     }()
     
@@ -35,7 +32,6 @@ class GroupsTableViewCell: UITableViewCell {
         l.textAlignment = .center
         l.lineBreakMode = .byWordWrapping
         l.numberOfLines = 2
-        //        l.contentMode = .scaleToFill
         
         return l
     }()
@@ -108,3 +104,10 @@ class GroupsTableViewCell: UITableViewCell {
         labelGroup.text = groups.name
     }
 }
+
+extension GroupsTableViewCell: ReusableView {
+    static var identifier: String {
+        return String(describing: self)
+    }
+}
+

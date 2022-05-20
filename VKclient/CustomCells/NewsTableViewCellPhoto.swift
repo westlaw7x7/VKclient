@@ -10,7 +10,7 @@ import SDWebImage
 
 class NewsTableViewCellPhoto: UITableViewCell{
     
-    static let reuseIdentifier = "NewsPhotoCell"
+//    MARK: - Properties
     
     private(set) lazy var newsPhoto: UIImageView = {
         let photo = UIImageView()
@@ -25,6 +25,7 @@ class NewsTableViewCellPhoto: UITableViewCell{
         return photo
     }()
     
+//    MARK: - Init
     
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -37,20 +38,24 @@ class NewsTableViewCellPhoto: UITableViewCell{
         self.setView()
     }
     
-    func setView() {
+//    MARK: - UI
+    
+    private func setView() {
         contentView.addSubview(newsPhoto)
         
         NSLayoutConstraint.activate([
-            newsPhoto.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 1),
-            newsPhoto.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 1),
-            newsPhoto.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 1),
-            newsPhoto.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 1)
+            newsPhoto.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 5),
+            newsPhoto.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: 5),
+            newsPhoto.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 5),
+            newsPhoto.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: 5)
         ])
     }
     
     func configure(_ image: News) {
-        let imageURL = image.url
+        
+        guard let imageURL = image.attachmentPhotoUrl else { return }
         newsPhoto.sd_setImage(with: imageURL)
+        
     }
     
     override func prepareForReuse() {
@@ -58,3 +63,10 @@ class NewsTableViewCellPhoto: UITableViewCell{
         newsPhoto.image = nil
     }
 }
+
+extension NewsTableViewCellPhoto: ReusableView {
+    static var identifier: String {
+        return String(describing: self)
+    }
+}
+

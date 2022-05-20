@@ -31,41 +31,55 @@ enum NewsTypes {
     var cellIdentifiersForRows: String {
         switch self {
         case .photo:
-            return "NewsPhotoCell"
+            return NewsTableViewCellPhoto.identifier
         case .text:
-            return  "NewsPostCell"
+            return  NewsTableViewCellPost.identifier
         case .footer:
-            return "NewsFooter"
+            return NewsFooterSection.identifier
         case .header:
-            return "NewsHeaderSection"
+            return NewsHeaderSection.identifier
         }
     }
 }
 
 class NewsTableViewController: UIViewController {
     
-    @IBOutlet var tableView: UITableView!
+
     let token = Session.instance.token
     let networkService = NetworkService()
     var newsPost: [News]?
+    
     var IDs = [Int]()
     var groupsForHeader: [Community] = []
     var usersForHeader: [User] = []
     var nextFrom = ""
     var isLoading = false
+    
+    private(set) lazy var tableView: UITableView = {
+        let t = UITableView()
+        t.translatesAutoresizingMaskIntoConstraints = false
+        
+        return t
+    }()
+    
     private let textCellFont = UIFont(name: "Avenir-Light", size: 16.0)!
     private let defaultCellHeight: CGFloat = 200
+    private var nextNews: String = ""
     
     override func viewDidLoad() {
         super.viewDidLoad()
         self.loadNews()
+        self.setupTableView()
         tableView.prefetchDataSource = self
+        tableView.dataSource = self
+        tableView.delegate = self
+        
         configRefreshControl()
         
-        self.tableView.register(NewsHeaderSection.self, forCellReuseIdentifier: NewsHeaderSection.reuseIdentifier)
-        self.tableView.register(NewsTableViewCellPost.self, forCellReuseIdentifier: NewsTableViewCellPost.reusedIdentifier)
-        self.tableView.register(NewsTableViewCellPhoto.self, forCellReuseIdentifier: NewsTableViewCellPhoto.reuseIdentifier)
-        self.tableView.register(NewsFooterSection.self, forCellReuseIdentifier: NewsFooterSection.reuseIdentifier)
+        self.tableView.register(NewsHeaderSection.self, forCellReuseIdentifier: NewsHeaderSection.identifier)
+        self.tableView.register(NewsTableViewCellPost.self, forCellReuseIdentifier: NewsTableViewCellPost.identifier)
+        self.tableView.register(NewsTableViewCellPhoto.self, forCellReuseIdentifier: NewsTableViewCellPhoto.identifier)
+        self.tableView.register(NewsFooterSection.self, forCellReuseIdentifier: NewsFooterSection.identifier)
         
     }
     
@@ -73,11 +87,22 @@ class NewsTableViewController: UIViewController {
         networkService.loadNewsFeed { [weak self] newsPost, nextFrom  in
             guard let self = self else { return }
             self.newsPost = newsPost
-            //            DispatchQueue.main.async {
+            self.nextNews = nextFrom
+            
             self.tableView.reloadData()
-            //            }
+            
         }
     }
+    
+    private func setupTableView() {
+        self.view.addSubview(tableView)
+        
+        tableView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+        tableView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+        tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        tableView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
+    }
+    
     
     private func configRefreshControl() {
         let refresh = UIRefreshControl()
@@ -106,16 +131,17 @@ extension NewsTableViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         guard
-            let news = newsPost?[indexPath.section] else { return NewsTableViewCellPost() }
+            let news = newsPost?[indexPath.section]
+        else { return NewsTableViewCellPost() }
         
         switch news.rowsCounter[indexPath.row] {
         case .header:
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: "NewsHeaderSection") as? NewsHeaderSection else { return NewsHeaderSection() }
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: NewsHeaderSection.identifier) as? NewsHeaderSection else { return NewsHeaderSection() }
             cell.configureCell(news)
             
             return cell
         case .text:
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: "NewsPostCell") as? NewsTableViewCellPost else { return NewsTableViewCellPost() }
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: NewsTableViewCellPost.identifier) as? NewsTableViewCellPost else { return NewsTableViewCellPost() }
             
             let textHeight = news.text.heightWithConstrainedWidth(width: tableView.frame.width, font: textCellFont)
             cell.configureCell(news, isTapped: textHeight > defaultCellHeight)
@@ -123,12 +149,13 @@ extension NewsTableViewController: UITableViewDataSource {
             
             return cell
         case .photo:
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: "NewsPhotoCell") as? NewsTableViewCellPhoto else { return NewsTableViewCellPhoto() }
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: NewsTableViewCellPhoto.identifier) as? NewsTableViewCellPhoto else { return NewsTableViewCellPhoto() }
+            
             cell.configure(news)
             
             return cell
         case .footer:
-            guard let cell = tableView.dequeueReusableCell(withIdentifier: NewsFooterSection.reuseIdentifier) as? NewsFooterSection
+            guard let cell = tableView.dequeueReusableCell(withIdentifier: NewsFooterSection.identifier) as? NewsFooterSection
             else { return NewsFooterSection() }
             cell.configureCell(news)
             
@@ -148,8 +175,7 @@ extension NewsTableViewController: UITableViewDataSource {
             return 40
         case .photo:
             let tableWidth = tableView.bounds.width
-            let newsAttachments = newsPost?[indexPath.section].attachments
-            let newsRatio = newsAttachments?[indexPath.section].photo?.aspectRatio ?? 0
+            guard let newsRatio = newsPost?[indexPath.section].aspectRatio else { return UITableView.automaticDimension }
             let newsCGfloatRatio = CGFloat(newsRatio)
             return newsCGfloatRatio * tableWidth
         case .text:
@@ -171,7 +197,7 @@ extension NewsTableViewController: UITableViewDelegate {
 extension NewsTableViewController: UITableViewDataSourcePrefetching {
     
     func tableView(_ tableView: UITableView, prefetchRowsAt indexPaths: [IndexPath]) {
-
+        
         guard let maxSections = indexPaths.map({ $0.section }).max() else { return }
         guard let newsItems = self.newsPost else { return }
         
@@ -179,19 +205,20 @@ extension NewsTableViewController: UITableViewDataSourcePrefetching {
         if maxSections > newsItems.count - 3, !isLoading {
             isLoading = true
             
-            networkService.loadNewsFeed(startFrom: nextFrom) { [weak self] (news, nextFrom) in
+            networkService.loadNewsFeed(startFrom: nextNews) { [weak self] (news, nextFrom) in
                 guard let self = self else { return }
+                
                 DispatchQueue.main.async {
                     let indexSet = IndexSet(integersIn: (self.newsPost?.count ?? 0) ..< ((self.newsPost?.count ?? 0) + news.count))
                     
                     self.newsPost?.append(contentsOf: news)
                     print(news)
-                    self.nextFrom = nextFrom
+                
+                    self.nextNews = nextFrom
                     
                     tableView.beginUpdates()
                     self.tableView.insertSections(indexSet, with: .automatic)
                     tableView.endUpdates()
-                    
                     self.isLoading = false
                 }
             }

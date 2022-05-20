@@ -11,7 +11,13 @@ import RealmSwift
 
 class NewFriendsTableViewController: UIViewController, UISearchBarDelegate {
     
-    @IBOutlet var tableView: UITableView!
+    private(set) lazy var tableView: UITableView = {
+        let t = UITableView()
+        t.translatesAutoresizingMaskIntoConstraints = false
+        
+        return t
+    }()
+    
     var friendsFromRealm: Results<UserRealm>?
     var notificationFriends: NotificationToken?
     var friendsNetworkLetters = [[UserObject]]()
@@ -22,6 +28,7 @@ class NewFriendsTableViewController: UIViewController, UISearchBarDelegate {
     private var searchedFilterData: [UserObject] = []
     private var searchedFiltedDataCharacters: [Character] = []
     private var sectionTitles: [Character] = []
+    
     private(set) lazy var searchBar: UISearchBar = {
         let s = UISearchBar()
         s.searchBarStyle = .default
@@ -62,7 +69,12 @@ class NewFriendsTableViewController: UIViewController, UISearchBarDelegate {
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        self.setupTableView()
+        
         searchBar.delegate = self
+        self.tableView.delegate = self
+        self.tableView.dataSource = self
+        self.tableView.register(NewFriendsViewCell.self, forCellReuseIdentifier: NewFriendsViewCell.identifier)
         navigationItem.titleView = searchBar
         navigationItem.titleView?.tintColor = .systemBlue
         navigationItem.leftBarButtonItem = exitButton
@@ -111,22 +123,20 @@ class NewFriendsTableViewController: UIViewController, UISearchBarDelegate {
         }
     }
     
-    @objc private func buttonPressed() {
-        self.dismiss(animated: true)
+    private func setupTableView() {
+        self.view.addSubview(tableView)
+        
+        tableView.topAnchor.constraint(equalTo: view.topAnchor).isActive = true
+        tableView.leftAnchor.constraint(equalTo: view.leftAnchor).isActive = true
+        tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor).isActive = true
+        tableView.rightAnchor.constraint(equalTo: view.rightAnchor).isActive = true
+        
     }
     
-    //        MARK: - Segue to transfer photos to the PhotoCollectionView
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        guard
-            segue.identifier == "goToAlbum",
-            let imageDestination = segue.destination as? PhotoViewController,
-            let indexPath = tableView.indexPathForSelectedRow
-        else { return }
-        let firstLetter = self.firstLetters[indexPath.section]
-        if let users = self.dictOfUsers[firstLetter] {
-            let user = users[indexPath.row]
-            imageDestination.friendID = user.id
-        }
+    @objc private func buttonPressed() {
+        let loginVC = LoginViewController()
+        self.view.window?.rootViewController = loginVC
+        self.view.window?.makeKeyAndVisible()
     }
 }
 
@@ -143,7 +153,7 @@ extension NewFriendsTableViewController: UITableViewDataSource {
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "NewFriendsCell", for: indexPath) as! NewFriendsViewCell
+        let cell = tableView.dequeueReusableCell(withIdentifier: NewFriendsViewCell.identifier, for: indexPath) as! NewFriendsViewCell
         //        MARK: Load from Realm
         let firstLetter = self.firstLetters[indexPath.section]
         if let users = self.dictOfUsers[firstLetter] {
@@ -183,28 +193,43 @@ extension NewFriendsTableViewController: UITableViewDataSource {
 extension NewFriendsTableViewController: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        
+        let firstLetter = self.firstLetters[indexPath.section]
+        if let users = self.dictOfUsers[firstLetter] {
+            let userID = users[indexPath.row].id
+            Session.instance.friendID = userID
+            let VC = PhotoViewController()
+            
+            
+            //            self.navigationController?.pushViewController(VC)
+            self.navigationController?.pushViewController(VC.self, animated: true)
+            
+        }
         defer { tableView.deselectRow(at: indexPath, animated: true)}
     }
-    
-    //    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
-    //        if editingStyle == .delete,
-    //           let friendToDelete = friendsFromRealm?[indexPath.row] {
-    //            do {
-    //                let realm = try Realm(configuration: Realm.Configuration(deleteRealmIfMigrationNeeded: true))
-    //                try realm.write {
-    //                    realm.delete(friendToDelete)
-    //                }
-    //                tableView.deleteRows(at: [indexPath], with: .fade)
-    //            } catch {
-    //                print(error)
-    //            }
-    //        }
-    //    }
 }
+
+
+//    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+//        if editingStyle == .delete,
+//           let friendToDelete = friendsFromRealm?[indexPath.row] {
+//            do {
+//                let realm = try Realm(configuration: Realm.Configuration(deleteRealmIfMigrationNeeded: true))
+//                try realm.write {
+//                    realm.delete(friendToDelete)
+//                }
+//                tableView.deleteRows(at: [indexPath], with: .fade)
+//            } catch {
+//                print(error)
+//            }
+//        }
+//    }
+
 extension NewFriendsTableViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRequireFailureOf otherGestureRecognizer: UIGestureRecognizer) -> Bool {
         return true
     }
 }
+
 
 
